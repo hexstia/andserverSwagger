@@ -111,6 +111,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             mRootUrl = "http://" + ip + ":8080/";
             addressList.add(mRootUrl);
             addressList.add("http://" + ip + ":8080/login.html");
+            addressList.add("swagger : \n http://" + ip + ":8080/swagger/api/swagger.json");
+            addressList.add("http://" + ip + ":8080");
+            addressList.add("http://" + ip + ":8080/docs.html");
             mTvMessage.setText(TextUtils.join("\n", addressList));
         } else {
             mRootUrl = null;
