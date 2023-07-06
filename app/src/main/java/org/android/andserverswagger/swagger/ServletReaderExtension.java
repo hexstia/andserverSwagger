@@ -1,10 +1,6 @@
 package org.android.andserverswagger.swagger;
 
-//
-// Source code recreated from a .class file by IntelliJ IDEA
-// (powered by FernFlower decompiler)
-//
-
+import android.util.Log;
 
 import com.fasterxml.jackson.databind.JavaType;
 import com.fasterxml.jackson.databind.type.TypeFactory;
@@ -42,6 +38,10 @@ import io.swagger.util.BaseReaderUtils;
 import io.swagger.util.ParameterProcessor;
 import io.swagger.util.PathUtils;
 import io.swagger.util.ReflectionUtils;
+import org.apache.commons.lang3.StringUtils;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.lang.reflect.Type;
@@ -50,35 +50,26 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.apache.commons.lang3.StringUtils;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 public class ServletReaderExtension implements ReaderExtension {
+
     private static final Logger LOGGER = LoggerFactory.getLogger(ServletReaderExtension.class);
     private static final String SUCCESSFUL_OPERATION = "successful operation";
 
-    public ServletReaderExtension() {
-    }
-
     private static <T> List<T> parseAnnotationValues(String str, Function<String, T> processor) {
-        List<T> result = new ArrayList();
-        Iterator var3 = Splitter.on(",").trimResults().omitEmptyStrings().split(str).iterator();
-
-        while(var3.hasNext()) {
-            String item = (String)var3.next();
+        final List<T> result = new ArrayList<>();
+        for (String item : Splitter.on(",").trimResults().omitEmptyStrings().split(str)) {
             result.add(processor.apply(item));
         }
-
         return result;
     }
 
     private static List<String> parseStringValues(String str) {
         return parseAnnotationValues(str, new Function<String, String>() {
+            @Override
             public String apply(String value) {
                 return value;
             }
@@ -86,66 +77,47 @@ public class ServletReaderExtension implements ReaderExtension {
     }
 
     private static List<Scheme> parseSchemes(String schemes) {
-        List<Scheme> result = new ArrayList();
-        String[] var2 = StringUtils.trimToEmpty(schemes).split(",");
-        int var3 = var2.length;
-
-        for(int var4 = 0; var4 < var3; ++var4) {
-            String item = var2[var4];
-            Scheme scheme = Scheme.forValue(StringUtils.trimToNull(item));
+        final List<Scheme> result = new ArrayList<>();
+        for (String item : StringUtils.trimToEmpty(schemes).split(",")) {
+            final Scheme scheme = Scheme.forValue(StringUtils.trimToNull(item));
             if (scheme != null && !result.contains(scheme)) {
                 result.add(scheme);
             }
         }
-
         return result;
     }
 
     private static List<SecurityRequirement> parseAuthorizations(Authorization[] authorizations) {
-        List<SecurityRequirement> result = new ArrayList();
-        Authorization[] var2 = authorizations;
-        int var3 = authorizations.length;
-
-        for(int var4 = 0; var4 < var3; ++var4) {
-            Authorization auth = var2[var4];
+        final List<SecurityRequirement> result = new ArrayList<>();
+        for (Authorization auth : authorizations) {
             if (StringUtils.isNotEmpty(auth.value())) {
-                SecurityRequirement security = new SecurityRequirement();
+                final SecurityRequirement security = new SecurityRequirement();
                 security.setName(auth.value());
-                AuthorizationScope[] var7 = auth.scopes();
-                int var8 = var7.length;
-
-                for(int var9 = 0; var9 < var8; ++var9) {
-                    AuthorizationScope scope = var7[var9];
+                for (AuthorizationScope scope : auth.scopes()) {
                     if (StringUtils.isNotEmpty(scope.scope())) {
                         security.addScope(scope.scope());
                     }
                 }
-
                 result.add(security);
             }
         }
-
         return result;
     }
 
     private static Map<String, Property> parseResponseHeaders(ReaderContext context, ResponseHeader[] headers) {
         Map<String, Property> responseHeaders = null;
-        ResponseHeader[] var3 = headers;
-        int var4 = headers.length;
-
-        for(int var5 = 0; var5 < var4; ++var5) {
-            ResponseHeader header = var3[var5];
-            String name = header.name();
+        for (ResponseHeader header : headers) {
+            final String name = header.name();
             if (StringUtils.isNotEmpty(name)) {
                 if (responseHeaders == null) {
-                    responseHeaders = new HashMap();
+                    responseHeaders = new HashMap<>();
                 }
-
-                Class<?> cls = header.response();
+                final Class<?> cls = header.response();
                 if (!ReflectionUtils.isVoid(cls)) {
-                    Property property = ModelConverters.getInstance().readAsProperty(cls);
+                    final Property property = ModelConverters.getInstance().readAsProperty(cls);
                     if (property != null) {
-                        Property responseProperty = ContainerWrapper.wrapContainer(header.responseContainer(), property, ContainerWrapper.ARRAY, ContainerWrapper.LIST, ContainerWrapper.SET);
+                        final Property responseProperty = ContainerWrapper.wrapContainer(header.responseContainer(),
+                                property, ContainerWrapper.ARRAY, ContainerWrapper.LIST, ContainerWrapper.SET);
                         responseProperty.setDescription(header.description());
                         responseHeaders.put(name, responseProperty);
                         appendModels(context.getSwagger(), cls);
@@ -153,136 +125,138 @@ public class ServletReaderExtension implements ReaderExtension {
                 }
             }
         }
-
         return responseHeaders;
     }
 
     private static void appendModels(Swagger swagger, Type type) {
-        Map<String, Model> models = ModelConverters.getInstance().readAll(type);
-        Iterator var3 = models.entrySet().iterator();
-
-        while(var3.hasNext()) {
-            Map.Entry<String, Model> entry = (Map.Entry)var3.next();
-            swagger.model((String)entry.getKey(), (Model)entry.getValue());
+        final Map<String, Model> models = ModelConverters.getInstance().readAll(type);
+        for (Map.Entry<String, Model> entry : models.entrySet()) {
+            swagger.model(entry.getKey(), entry.getValue());
         }
-
     }
 
     private static boolean isValidResponse(Type type) {
-        JavaType javaType = TypeFactory.defaultInstance().constructType(type);
+        final JavaType javaType = TypeFactory.defaultInstance().constructType(type);
         return !ReflectionUtils.isVoid(javaType);
     }
 
     private static Type getResponseType(Method method) {
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
-        return (Type)(apiOperation != null && !ReflectionUtils.isVoid(apiOperation.response()) ? apiOperation.response() : method.getGenericReturnType());
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        if (apiOperation != null && !ReflectionUtils.isVoid(apiOperation.response())) {
+            return apiOperation.response();
+        } else {
+            return method.getGenericReturnType();
+        }
     }
 
     private static String getResponseContainer(ApiOperation apiOperation) {
-        return apiOperation == null ? null : (String)StringUtils.defaultIfBlank(apiOperation.responseContainer(), (CharSequence)null);
+        return apiOperation == null ? null : StringUtils.defaultIfBlank(apiOperation.responseContainer(), null);
     }
 
+    @Override
     public int getPriority() {
         return 0;
     }
 
+    @Override
     public boolean isReadable(ReaderContext context) {
-        Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
+        final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
         return apiAnnotation != null && (context.isReadHidden() || !apiAnnotation.hidden());
     }
 
+    @Override
     public void applyConsumes(ReaderContext context, Operation operation, Method method) {
-        List<String> consumes = new ArrayList();
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final List<String> consumes = new ArrayList<>();
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+
         if (apiOperation != null) {
             consumes.addAll(parseStringValues(apiOperation.consumes()));
         }
 
         if (consumes.isEmpty()) {
-            Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
+            final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
             if (apiAnnotation != null) {
                 consumes.addAll(parseStringValues(apiAnnotation.consumes()));
             }
-
             consumes.addAll(context.getParentConsumes());
         }
 
-        Iterator var8 = consumes.iterator();
-
-        while(var8.hasNext()) {
-            String consume = (String)var8.next();
+        for (String consume : consumes) {
             operation.consumes(consume);
         }
-
     }
 
+    @Override
     public void applyProduces(ReaderContext context, Operation operation, Method method) {
-        List<String> produces = new ArrayList();
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final List<String> produces = new ArrayList<>();
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+
         if (apiOperation != null) {
             produces.addAll(parseStringValues(apiOperation.produces()));
         }
 
         if (produces.isEmpty()) {
-            Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
+            final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
             if (apiAnnotation != null) {
                 produces.addAll(parseStringValues(apiAnnotation.produces()));
             }
-
             produces.addAll(context.getParentProduces());
         }
 
-        Iterator var8 = produces.iterator();
-
-        while(var8.hasNext()) {
-            String produce = (String)var8.next();
+        for (String produce : produces) {
             operation.produces(produce);
         }
-
     }
 
+    @Override
     public String getHttpMethod(ReaderContext context, Method method) {
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
-        return apiOperation != null && !StringUtils.isEmpty(apiOperation.httpMethod()) ? apiOperation.httpMethod() : context.getParentHttpMethod();
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        return apiOperation == null || StringUtils.isEmpty(apiOperation.httpMethod()) ?
+                context.getParentHttpMethod() : apiOperation.httpMethod();
     }
 
+    @Override
     public String getPath(ReaderContext context, Method method) {
-        Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
-        String operationPath = apiOperation == null ? null : apiOperation.nickname();
-        return PathUtils.collectPath(new String[]{context.getParentPath(), apiAnnotation == null ? null : apiAnnotation.value(), StringUtils.isBlank(operationPath) ? method.getName() : operationPath});
+        final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final String operationPath = apiOperation == null ? null : apiOperation.nickname();
+        return PathUtils.collectPath(context.getParentPath(),
+                apiAnnotation == null ? null : apiAnnotation.value(),
+                StringUtils.isBlank(operationPath) ? method.getName() : operationPath);
     }
 
+    @Override
     public void applyOperationId(Operation operation, Method method) {
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
         if (apiOperation != null && StringUtils.isNotBlank(apiOperation.nickname())) {
             operation.operationId(apiOperation.nickname());
         } else {
             operation.operationId(method.getName());
         }
-
     }
 
+    @Override
     public void applySummary(Operation operation, Method method) {
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
         if (apiOperation != null && StringUtils.isNotBlank(apiOperation.value())) {
             operation.summary(apiOperation.value());
         }
-
     }
 
+    @Override
     public void applyDescription(Operation operation, Method method) {
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
         if (apiOperation != null && StringUtils.isNotBlank(apiOperation.notes())) {
             operation.description(apiOperation.notes());
         }
-
     }
 
+    @Override
     public void applySchemes(ReaderContext context, Operation operation, Method method) {
-        List<Scheme> schemes = new ArrayList();
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
-        Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
+        final List<Scheme> schemes = new ArrayList<>();
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
+
         if (apiOperation != null) {
             schemes.addAll(parseSchemes(apiOperation.protocols()));
         }
@@ -291,26 +265,24 @@ public class ServletReaderExtension implements ReaderExtension {
             schemes.addAll(parseSchemes(apiAnnotation.protocols()));
         }
 
-        Iterator var7 = schemes.iterator();
-
-        while(var7.hasNext()) {
-            Scheme scheme = (Scheme)var7.next();
+        for (Scheme scheme : schemes) {
             operation.scheme(scheme);
         }
-
     }
 
+    @Override
     public void setDeprecated(Operation operation, Method method) {
         if (ReflectionUtils.getAnnotation(method, Deprecated.class) != null) {
             operation.deprecated(true);
         }
-
     }
 
+    @Override
     public void applySecurityRequirements(ReaderContext context, Operation operation, Method method) {
-        List<SecurityRequirement> securityRequirements = new ArrayList();
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
-        Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
+        final List<SecurityRequirement> securityRequirements = new ArrayList<SecurityRequirement>();
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
+
         if (apiOperation != null) {
             securityRequirements.addAll(parseAuthorizations(apiOperation.authorizations()));
         }
@@ -319,161 +291,217 @@ public class ServletReaderExtension implements ReaderExtension {
             securityRequirements.addAll(parseAuthorizations(apiAnnotation.authorizations()));
         }
 
-        Iterator var7 = securityRequirements.iterator();
-
-        while(var7.hasNext()) {
-            SecurityRequirement securityRequirement = (SecurityRequirement)var7.next();
+        for (SecurityRequirement securityRequirement : securityRequirements) {
             operation.security(securityRequirement);
         }
-
     }
 
+    @Override
     public void applyTags(ReaderContext context, Operation operation, Method method) {
-        List<String> tags = new ArrayList();
-        Api apiAnnotation = (Api)context.getCls().getAnnotation(Api.class);
+        final List<String> tags = new ArrayList<>();
+
+        final Api apiAnnotation = context.getCls().getAnnotation(Api.class);
         Predicate predicate = new Predicate<String>() {
+            @Override
             public boolean apply(String input) {
                 return StringUtils.isNotBlank(input);
             }
 
             public boolean test(String input) {
-                return this.apply(input);
+                return apply(input);
             }
         };
         if (apiAnnotation != null) {
             tags.addAll(Collections2.filter(Arrays.asList(apiAnnotation.tags()), predicate));
         }
-
         tags.addAll(context.getParentTags());
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
         if (apiOperation != null) {
             tags.addAll(Collections2.filter(Arrays.asList(apiOperation.tags()), predicate));
         }
 
-        Iterator var8 = tags.iterator();
-
-        while(var8.hasNext()) {
-            String tag = (String)var8.next();
+        for (String tag : tags) {
             operation.tag(tag);
         }
-
     }
 
+    @Override
     public void applyResponses(ReaderContext context, Operation operation, Method method) {
-        Map<Integer, Response> result = new HashMap();
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
+        final Map<Integer, Response> result = new HashMap<>();
+
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class);
         if (apiOperation != null && StringUtils.isNotBlank(apiOperation.responseReference())) {
-            Response response = (new Response()).description("successful operation");
+            final Response response = new Response().description(SUCCESSFUL_OPERATION);
             response.schema(new RefProperty(apiOperation.responseReference()));
             result.put(apiOperation.code(), response);
         }
 
-        Type responseType = getResponseType(method);
-        int responseCode;
+        final Type responseType = getResponseType(method);
         if (isValidResponse(responseType)) {
-            Property property = ModelConverters.getInstance().readAsProperty(responseType);
+            final Property property = ModelConverters.getInstance().readAsProperty(responseType);
             if (property != null) {
-                Property responseProperty = ContainerWrapper.wrapContainer(getResponseContainer(apiOperation), property);
-                responseCode = apiOperation == null ? 200 : apiOperation.code();
-                Map<String, Property> defaultResponseHeaders = apiOperation == null ? Collections.emptyMap() : parseResponseHeaders(context, apiOperation.responseHeaders());
-                Response response = (new Response()).description("successful operation").schema(responseProperty).headers(defaultResponseHeaders);
+                final Property responseProperty = ContainerWrapper.wrapContainer(getResponseContainer(apiOperation), property);
+                final int responseCode = apiOperation == null ? 200 : apiOperation.code();
+                final Map<String, Property> defaultResponseHeaders = apiOperation == null ?
+                        Collections.<String, Property>emptyMap() :
+                        parseResponseHeaders(context, apiOperation.responseHeaders());
+                final Response response = new Response()
+                        .description(SUCCESSFUL_OPERATION)
+                        .schema(responseProperty)
+                        .headers(defaultResponseHeaders);
                 result.put(responseCode, response);
                 appendModels(context.getSwagger(), responseType);
             }
         }
 
-        ApiResponses responseAnnotation = (ApiResponses)ReflectionUtils.getAnnotation(method, ApiResponses.class);
+        final ApiResponses responseAnnotation = ReflectionUtils.getAnnotation(method, ApiResponses.class);
         if (responseAnnotation != null) {
-            ApiResponse[] var18 = responseAnnotation.value();
-            responseCode = var18.length;
+            for (ApiResponse apiResponse : responseAnnotation.value()) {
+                final Map<String, Property> responseHeaders = parseResponseHeaders(context, apiResponse.responseHeaders());
 
-            for(int var21 = 0; var21 < responseCode; ++var21) {
-                ApiResponse apiResponse = var18[var21];
-                Map<String, Property> responseHeaders = parseResponseHeaders(context, apiResponse.responseHeaders());
-                Response response = (new Response()).description(apiResponse.message()).headers(responseHeaders);
+                final Response response = new Response()
+                        .description(apiResponse.message())
+                        .headers(responseHeaders);
+
                 if (StringUtils.isNotEmpty(apiResponse.reference())) {
                     response.schema(new RefProperty(apiResponse.reference()));
                 } else if (!ReflectionUtils.isVoid(apiResponse.response())) {
-                    Type type = apiResponse.response();
-                    Property property = ModelConverters.getInstance().readAsProperty(type);
+                    final Type type = apiResponse.response();
+                    Log.i("TAG","type :"+type.getTypeName());
+                    final Property property = ModelConverters.getInstance().readAsProperty(type);
                     if (property != null) {
                         response.schema(ContainerWrapper.wrapContainer(apiResponse.responseContainer(), property));
                         appendModels(context.getSwagger(), type);
                     }
                 }
-
                 result.put(apiResponse.code(), response);
             }
         }
 
-        Iterator var19 = result.entrySet().iterator();
-
-        while(var19.hasNext()) {
-            Map.Entry<Integer, Response> responseEntry = (Map.Entry)var19.next();
-            if ((Integer)responseEntry.getKey() == 0) {
-                operation.defaultResponse((Response)responseEntry.getValue());
+        for (Map.Entry<Integer, Response> responseEntry : result.entrySet()) {
+            if (responseEntry.getKey() == 0) {
+                operation.defaultResponse(responseEntry.getValue());
             } else {
-                operation.response((Integer)responseEntry.getKey(), (Response)responseEntry.getValue());
+                operation.response(responseEntry.getKey(), responseEntry.getValue());
             }
         }
-
     }
 
+    @Override
     public void applyParameters(ReaderContext context, Operation operation, Type type, Annotation[] annotations) {
+
     }
 
+    @Override
     public void applyImplicitParameters(ReaderContext context, Operation operation, Method method) {
-        ApiImplicitParams implicitParams = (ApiImplicitParams)ReflectionUtils.getAnnotation(method, ApiImplicitParams.class);
+        final ApiImplicitParams implicitParams = ReflectionUtils.getAnnotation(method, ApiImplicitParams.class);
         if (implicitParams != null && implicitParams.value().length > 0) {
-            ApiImplicitParam[] var5 = implicitParams.value();
-            int var6 = var5.length;
-
-            for(int var7 = 0; var7 < var6; ++var7) {
-                ApiImplicitParam param = var5[var7];
-                Parameter p = this.readImplicitParam(context.getSwagger(), param);
+            for (ApiImplicitParam param : implicitParams.value()) {
+                final Parameter p = readImplicitParam(context.getSwagger(), param);
                 if (p != null) {
                     operation.parameter(p);
                 }
             }
         }
-
     }
 
+    @Override
     public void applyExtensions(ReaderContext context, Operation operation, Method method) {
-        ApiOperation apiOperation = (ApiOperation)ReflectionUtils.getAnnotation(method, ApiOperation.class);
-        if (apiOperation != null) {
+        final ApiOperation apiOperation = ReflectionUtils.getAnnotation(method, ApiOperation.class );
+        if( apiOperation != null ) {
             operation.getVendorExtensions().putAll(BaseReaderUtils.parseExtensions(apiOperation.extensions()));
         }
-
     }
 
     private Parameter readImplicitParam(Swagger swagger, ApiImplicitParam param) {
-        Parameter p = ParameterFactory.createParam(param.paramType());
+        final Parameter p = ParameterFactory.createParam(param.paramType());
         if (p == null) {
             return null;
-        } else {
-            Type type = ReflectionUtils.typeFromString(param.dataType());
-            return ParameterProcessor.applyAnnotations(swagger, p, (Type)(type == null ? String.class : type), Collections.singletonList(param));
         }
+        final Type type = ReflectionUtils.typeFromString(param.dataType());
+        return ParameterProcessor.applyAnnotations(swagger, p, type == null ? String.class : type,
+                Collections.<Annotation>singletonList(param));
     }
 
-    static enum ContainerWrapper {
+    enum ParameterFactory {
+        PATH("path") {
+            @Override
+            protected Parameter create() {
+                return new PathParameter();
+            }
+        },
+        QUERY("query") {
+            @Override
+            protected Parameter create() {
+                return new QueryParameter();
+            }
+        },
+        FORM("form") {
+            @Override
+            protected Parameter create() {
+                return new FormParameter();
+            }
+        },
+        FORM_DATA("formData") {
+            @Override
+            protected Parameter create() {
+                return new FormParameter();
+            }
+        },
+        HEADER("header") {
+            @Override
+            protected Parameter create() {
+                return new HeaderParameter();
+            }
+        },
+        BODY("body") {
+            @Override
+            protected Parameter create() {
+                return new BodyParameter();
+            }
+        };
+
+        private final String paramType;
+
+        ParameterFactory(String paramType) {
+            this.paramType = paramType;
+        }
+
+        public static Parameter createParam(String paramType) {
+            for (ParameterFactory item : values()) {
+                if (item.paramType.equalsIgnoreCase(paramType)) {
+                    return item.create();
+                }
+            }
+            LOGGER.warn("Unknown implicit parameter type: [" + paramType + "]");
+            return null;
+        }
+
+        protected abstract Parameter create();
+    }
+
+    enum ContainerWrapper {
         LIST("list") {
+            @Override
             protected Property doWrap(Property property) {
                 return new ArrayProperty(property);
             }
         },
         ARRAY("array") {
+            @Override
             protected Property doWrap(Property property) {
                 return new ArrayProperty(property);
             }
         },
         MAP("map") {
+            @Override
             protected Property doWrap(Property property) {
                 return new MapProperty(property);
             }
         },
         SET("set") {
+            @Override
             protected Property doWrap(Property property) {
                 ArrayProperty arrayProperty = new ArrayProperty(property);
                 arrayProperty.setUniqueItems(true);
@@ -483,87 +511,29 @@ public class ServletReaderExtension implements ReaderExtension {
 
         private final String container;
 
-        private ContainerWrapper(String container) {
+        ContainerWrapper(String container) {
             this.container = container;
         }
 
         public static Property wrapContainer(String container, Property property, ContainerWrapper... allowed) {
-            Set<ContainerWrapper> tmp = allowed.length > 0 ? EnumSet.copyOf(Arrays.asList(allowed)) : EnumSet.allOf(ContainerWrapper.class);
-            Iterator var4 = tmp.iterator();
-
-            Property prop;
-            do {
-                if (!var4.hasNext()) {
-                    return property;
+            final Set<ContainerWrapper> tmp = allowed.length > 0 ? EnumSet.copyOf(Arrays.asList(allowed)) : EnumSet.allOf(ContainerWrapper.class);
+            for (ContainerWrapper wrapper : tmp) {
+                final Property prop = wrapper.wrap(container, property);
+                if (prop != null) {
+                    return prop;
                 }
-
-                ContainerWrapper wrapper = (ContainerWrapper)var4.next();
-                prop = wrapper.wrap(container, property);
-            } while(prop == null);
-
-            return prop;
+            }
+            return property;
         }
 
         public Property wrap(String container, Property property) {
-            return this.container.equalsIgnoreCase(container) ? this.doWrap(property) : null;
-        }
-
-        protected abstract Property doWrap(Property var1);
-    }
-
-    static enum ParameterFactory {
-        PATH("path") {
-            protected Parameter create() {
-                return new PathParameter();
+            if (this.container.equalsIgnoreCase(container)) {
+                return doWrap(property);
             }
-        },
-        QUERY("query") {
-            protected Parameter create() {
-                return new QueryParameter();
-            }
-        },
-        FORM("form") {
-            protected Parameter create() {
-                return new FormParameter();
-            }
-        },
-        FORM_DATA("formData") {
-            protected Parameter create() {
-                return new FormParameter();
-            }
-        },
-        HEADER("header") {
-            protected Parameter create() {
-                return new HeaderParameter();
-            }
-        },
-        BODY("body") {
-            protected Parameter create() {
-                return new BodyParameter();
-            }
-        };
-
-        private final String paramType;
-
-        private ParameterFactory(String paramType) {
-            this.paramType = paramType;
-        }
-
-        public static Parameter createParam(String paramType) {
-            ParameterFactory[] var1 = values();
-            int var2 = var1.length;
-
-            for(int var3 = 0; var3 < var2; ++var3) {
-                ParameterFactory item = var1[var3];
-                if (item.paramType.equalsIgnoreCase(paramType)) {
-                    return item.create();
-                }
-            }
-
-            ServletReaderExtension.LOGGER.warn("Unknown implicit parameter type: [" + paramType + "]");
             return null;
         }
 
-        protected abstract Parameter create();
+        protected abstract Property doWrap(Property property);
     }
+
 }

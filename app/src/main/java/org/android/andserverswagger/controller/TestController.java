@@ -75,13 +75,13 @@ import io.swagger.annotations.Tag;
         ),
         consumes = {"application/json", "application/xml"},
         produces = {"application/json", "application/xml"},
-        schemes = {SwaggerDefinition.Scheme.HTTP, SwaggerDefinition.Scheme.HTTPS},
-        tags = {@Tag(name = "users", description = "Operations about user")}
+        schemes = {SwaggerDefinition.Scheme.HTTP, SwaggerDefinition.Scheme.HTTPS}
+        , tags = {@Tag(name = "users", description = "Operations about user")}
 )
-@Api(value = "/sample/users", description = "gets some data from a servlet")
+@Api(tags = "users",value = "/user", description = "gets some data from a servlet")
 @RestController
 @RequestMapping(path = "/user")
-class TestController {
+public class TestController {
 
     @RequestMapping(
         path = "/connection",
@@ -117,17 +117,18 @@ class TestController {
 //            @ApiImplicitParam(name = "dateOfBirth", value = "User's date of birth, in dd-MM-yyyy format",
 //                    dataType = "java.util.Date", paramType = "query")})
 
-    @ApiOperation(httpMethod = "GET", value = "获取用户ID", response = String.class, nickname = "info")
-    @ApiResponses({@ApiResponse(code = 400, message = "Invalid input", response = ApiResponse
+    @ApiOperation(httpMethod = "GET", value = "获取用户ID",  nickname = "/get/{userId}",notes = "获取用户ID")
+    @ApiResponses({@ApiResponse(code = 400, message = "Invalid input", response = org.android.andserverswagger.enitiy.ApiResponse
             .class)})
-    @ApiImplicitParams({
-            @ApiImplicitParam(name = "userId", value = "用户id", required = true, dataType = "integer", paramType =
-                    "get")})
+
+        @ApiImplicitParams({
+            @ApiImplicitParam(name = "userId", value = "用户id", required = true, dataType = "String", paramType =
+                    "query")})
     @RequestMapping(
         path = "/get/{userId}",
         method = {RequestMethod.PUT, RequestMethod.POST, RequestMethod.GET},
         produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    String info(@PathVariable(name = "userId") String userId, HttpRequest request) {
+    public   String info(@PathVariable(name = "userId") String userId, HttpRequest request) {
         return userId;
     }
 
