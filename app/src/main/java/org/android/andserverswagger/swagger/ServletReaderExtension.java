@@ -12,6 +12,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.Authorization;
@@ -24,6 +25,7 @@ import io.swagger.models.Response;
 import io.swagger.models.Scheme;
 import io.swagger.models.SecurityRequirement;
 import io.swagger.models.Swagger;
+import io.swagger.models.parameters.AbstractSerializableParameter;
 import io.swagger.models.parameters.BodyParameter;
 import io.swagger.models.parameters.FormParameter;
 import io.swagger.models.parameters.HeaderParameter;
@@ -44,6 +46,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
+import java.lang.reflect.ParameterizedType;
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -390,8 +393,38 @@ public class ServletReaderExtension implements ReaderExtension {
 
     @Override
     public void applyParameters(ReaderContext context, Operation operation, Type type, Annotation[] annotations) {
+//        Log.i("PARAME",type.getTypeName());
+//        if (type instanceof ParameterizedType) {
+//            ParameterizedType parameterizedType = (ParameterizedType) type;
+//            Type[] actualTypeArguments = parameterizedType.getActualTypeArguments();
+//            for (Type argumentType : actualTypeArguments) {
+//                Parameter parameter = readParameter(context.getSwagger(), argumentType, annotations);
+//                if (parameter != null) {
+//                    operation.parameter(parameter);
+//                }
+//            }
+//        } else {
+//            Parameter parameter = readParameter(context.getSwagger(), type, annotations);
+//            if (parameter != null) {
+//                operation.parameter(parameter);
+//            }
+//        }
 
     }
+    private static final String TAG = "PARAM";
+    private Parameter readParameter(Swagger swagger, Type type, Annotation[] annotations) {
+        Parameter parameter = null;
+        for (Annotation annotation : annotations) {
+            if (annotation instanceof ApiParam) {
+                ApiParam apiParam = (ApiParam) annotation;
+                Log.i(TAG,apiParam.name()+" ::"+apiParam.value());
+//                parameter = ParameterProcessor.applyAnnotations(swagger, createParameter(apiParam), type, Collections.singletonList(annotation));
+                break;
+            }
+        }
+        return parameter;
+    }
+
 
     @Override
     public void applyImplicitParameters(ReaderContext context, Operation operation, Method method) {
@@ -420,6 +453,9 @@ public class ServletReaderExtension implements ReaderExtension {
             return null;
         }
         final Type type = ReflectionUtils.typeFromString(param.dataType());
+//        Log.i(TAG,"param.dataType()::"+param.dataType());
+//        Log.i(TAG,"param.getTypeName::"+type.getTypeName());
+//        Log.i(TAG,"p isseriazeable ::"+(p instanceof AbstractSerializableParameter));
         return ParameterProcessor.applyAnnotations(swagger, p, type == null ? String.class : type,
                 Collections.<Annotation>singletonList(param));
     }

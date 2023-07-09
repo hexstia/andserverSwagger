@@ -5,13 +5,21 @@ import java.util.Date;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-@XmlRootElement(name = "SampleData")
-public class SampleData {
+import io.swagger.annotations.ApiModel;
+import io.swagger.annotations.ApiModelProperty;
 
+@XmlRootElement(name = "SampleData")
+@ApiModel(value = "SampleData", description = "Pet object that needs to be added to the store")
+public class SampleData {
+    @ApiModelProperty(required = true, value = "这是一个ID值")
     private Integer id;
+    @ApiModelProperty(required = true, value = "这是一个ID值")
     private String name;
+    @ApiModelProperty(required = true, value = "这是一个ID值")
     private String email;
+    @ApiModelProperty(required = true, value = "这是一个ID值")
     private Integer age;
+    @ApiModelProperty(required = true, value = "这是一个ID值")
     private Date dateOfBirth;
 
     public SampleData(Integer id, String name, String email, Integer age, Date dateOfBirth) {

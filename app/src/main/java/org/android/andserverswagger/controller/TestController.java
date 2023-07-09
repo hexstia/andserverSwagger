@@ -38,6 +38,8 @@ import com.yanzhenjie.andserver.util.Executors;
 import com.yanzhenjie.andserver.util.MediaType;
 
 import org.android.andserverswagger.config.LoginInterceptor;
+import org.android.andserverswagger.enitiy.Order;
+import org.android.andserverswagger.enitiy.SampleData;
 import org.android.andserverswagger.model.UserInfo;
 import org.android.andserverswagger.utils.FileUtils;
 import org.android.andserverswagger.utils.Logger;
@@ -53,6 +55,7 @@ import io.swagger.annotations.Api;
 import io.swagger.annotations.ApiImplicitParam;
 import io.swagger.annotations.ApiImplicitParams;
 import io.swagger.annotations.ApiOperation;
+import io.swagger.annotations.ApiParam;
 import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.Contact;
@@ -76,9 +79,9 @@ import io.swagger.annotations.Tag;
         consumes = {"application/json", "application/xml"},
         produces = {"application/json", "application/xml"},
         schemes = {SwaggerDefinition.Scheme.HTTP, SwaggerDefinition.Scheme.HTTPS}
-        , tags = {@Tag(name = "users", description = "Operations about user")}
+        , tags = {@Tag(name = "用户相关", description = "Operations about user")}
 )
-@Api(tags = "users",value = "/user", description = "gets some data from a servlet")
+@Api(tags = "用户相关",value = "/user", description = "获取用户信息")
 @RestController
 @RequestMapping(path = "/user")
 public class TestController {
@@ -103,34 +106,38 @@ public class TestController {
         methods = {RequestMethod.POST, RequestMethod.GET}
     )
 //    @ApiOperation(httpMethod = "GET", value = "Resource to get a user", response = SampleData.class, nickname = "getUser")
-//    @ApiResponses({@ApiResponse(code = 400, message = "Invalid input", response = ApiResponse
-//            .class)})
-//    @ApiImplicitParams({
-//            @ApiImplicitParam(name = "id", value = "User ID", required = true, dataType = "integer", paramType =
-//                    "query"),
-//            @ApiImplicitParam(name = "name", value = "User's name", required = true, dataType = "string", paramType =
-//                    "query"),
-//            @ApiImplicitParam(name = "email", value = "User's email", required = true, dataType = "string", paramType
-//                    = "query"),
-//            @ApiImplicitParam(name = "age", value = "User's age", required = true, dataType = "integer", paramType =
-//                    "query"),
-//            @ApiImplicitParam(name = "dateOfBirth", value = "User's date of birth, in dd-MM-yyyy format",
-//                    dataType = "java.util.Date", paramType = "query")})
-
-    @ApiOperation(httpMethod = "GET", value = "获取用户ID",  nickname = "/get/{userId}",notes = "获取用户ID")
-    @ApiResponses({@ApiResponse(code = 400, message = "Invalid input", response = org.android.andserverswagger.enitiy.ApiResponse
+    @ApiOperation(httpMethod = "GET", value = "获取用户信息",  nickname = "getUser",notes = "这是一个用户相关的接口",consumes = "消费者",produces = "生产者")
+    @ApiResponses({@ApiResponse(code = 400, message = "Invalid input", response = Order
             .class)})
+    @ApiImplicitParams({
+            @ApiImplicitParam(name = "id", value = "User ID", required = true, dataType = "integer", paramType =
+                    "query"),
+            @ApiImplicitParam(name = "name", value = "User's name", required = true, dataType = "string", paramType =
+                    "query",defaultValue = "1"),
+            @ApiImplicitParam(name = "email", value = "User's email", required = true, dataType = "string", paramType
+                    = "query"),
+            @ApiImplicitParam(name = "age", value = "User's age", required = true, dataType = "org.android.andserverswagger.enitiy.Order", paramType =
+                    "body"),
+            @ApiImplicitParam(name = "dateOfBirth", value = "User's date of birth, in dd-MM-yyyy format",
+                    dataType = "java.util.Date", paramType = "query")})
 
-        @ApiImplicitParams({
-            @ApiImplicitParam(name = "userId", value = "用户id", required = true, dataType = "String", paramType =
-                    "query")})
+//    @ApiOperation(httpMethod = "GET", value = "获取用户ID",  nickname = "/get/{userId}",notes = "获取用户ID")
+//    @ApiResponses({@ApiResponse(code = 400, message = "Invalid input", response = SampleData
+//            .class)})
+//
+//        @ApiImplicitParams({
+//            @ApiImplicitParam(name = "userId", value = "用户id", required = true, dataType = "String", paramType =
+//                    "query",dataTypeClass = Order.class)})
     @RequestMapping(
         path = "/get/{userId}",
         method = {RequestMethod.PUT, RequestMethod.POST, RequestMethod.GET},
         produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
-    public   String info(@PathVariable(name = "userId") String userId, HttpRequest request) {
-        return userId;
+    public   Order info( @RequestBody @ApiParam(value = "order placed for purchasing the pet", required = true)  Order order , HttpRequest request) {
+        return null;
     }
+
+
+
 
     @PutMapping(path = "/get/{userId}", produces = MediaType.APPLICATION_JSON_UTF8_VALUE)
     String modify(@PathVariable("userId") String userId, @RequestParam(name = "sex") String sex,

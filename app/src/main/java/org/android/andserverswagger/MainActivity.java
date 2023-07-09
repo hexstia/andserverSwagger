@@ -108,7 +108,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         if (!TextUtils.isEmpty(ip)) {
             List<String> addressList = new LinkedList<>();
-            mRootUrl = "http://" + ip + ":8080/";
+            mRootUrl = "http://" + ip + ":8080/docs.html";
             addressList.add(mRootUrl);
             addressList.add("http://" + ip + ":8080/login.html");
             addressList.add("swagger : \n http://" + ip + ":8080/swagger/api/swagger.json");
